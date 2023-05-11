@@ -84,7 +84,7 @@ public class MonteCarloAI : MonoBehaviour {
     private Dictionary<int[], int> wins = new Dictionary<int[], int>(new CustomEqualityComparer()); // Хранит количество побед, разыгрывая все возможные случаи взяв в качестве стартовой точки состояние доски
     private Dictionary<int[], int> plays = new Dictionary<int[], int>(new CustomEqualityComparer()); // Хранит количество законченных партий, разыгрывая все возможные случаи взяв в качестве стартовой точки состояние доски
 
-    public static float allocatedTime = 15f; // Время которое доступно, чтобы просмотреть n-нное количество возможных исходов
+    public const float allocatedTime = 20f; // Время которое доступно, чтобы просмотреть n-нное количество возможных исходов
     [SerializeField] int maxMoves = 100; // Максимальное количество ходов, которое можно сделать за один ход
     [SerializeField] float explorationParam = 1.4f; // Используется в уравнении, чтобы определить какую ветвь выбрать дальше
 

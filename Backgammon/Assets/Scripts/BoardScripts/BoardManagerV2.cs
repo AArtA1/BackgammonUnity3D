@@ -13,10 +13,11 @@ public class BoardManagerV2 : MonoBehaviour {
     private const int MAXPOINTES = 24;
     private const int MAXCHECKERS = 15;
 
+    // Информация о победе конкретного игрока
     private const string WHITEWON = "White wins!";
     private const string BLACKWON = "Black wins!";
 
-
+    // Это массивы, которые хранят в себе ссылки на экземпляры объектов Pointer(треугольных форм),Checkers(шашки), Dice(игровые кости)
     [SerializeField] PointeManager[] pointes = new PointeManager[MAXPOINTES];
     [SerializeField] Checker[] whiteCheckers = new Checker[MAXCHECKERS];
     [SerializeField] Checker[] blackCheckers = new Checker[MAXCHECKERS];
@@ -25,18 +26,23 @@ public class BoardManagerV2 : MonoBehaviour {
     [SerializeField] BaringOffManager baringOff = null;
     [SerializeField] MonteCarloAI AI = null;
 
+    // Вспомогательная информация для работы ИИ
     [SerializeField] Button winInformation;
     [SerializeField] Text winInformationText;
     [SerializeField] Button AIMoveInformation;
     [SerializeField] Text AIMoveInformationText;
 
+    // Время для разыгрывания игральной кости и время ожидания между ходами
     [SerializeField] float waitForDiceRollTime = 2f;
     [SerializeField] float waitFinishMove = 2f;
 
+    // Высота на которую поднимается шашка, когда игрок пытается переместить ее на другую позицию
     [SerializeField] float selectedPieceYOffset = 2f;
 
+    // Flag Будет ли играть ИИ
     public static bool againstAI = false;
 
+    // Хранит в себе значения, которые указывает, какие действия может совершать игрок
     private enum turnPhase { StartGame, RollDice, WhiteTurn, BlackTurn };
     private enum gamePhase { Regular, BaringOff };
 
@@ -916,8 +922,8 @@ public class BoardManagerV2 : MonoBehaviour {
         if(roll1 == roll2) {
             for(int i = 0; i < 4; i++) {
                 KeyValuePair<int, int> move = AI.getPlay(board, roll1, roll2, winPercentages);
-
-                if(move.Key == -1 && move.Value == -1) {
+                winPercentages.Clear();
+                if (move.Key == -1 && move.Value == -1) {
                     break;
                 }
 
@@ -928,6 +934,7 @@ public class BoardManagerV2 : MonoBehaviour {
         }
         else {
             KeyValuePair<int, int> move = AI.getPlay(board, roll1, roll2, winPercentages);
+            winPercentages.Clear();
 
             if (move.Key != -1 && move.Value != -1) {
                 updateBoard(move);
@@ -935,14 +942,14 @@ public class BoardManagerV2 : MonoBehaviour {
 
                 if (Mathf.Abs(move.Key - move.Value) == roll1) {
                     move = AI.getPlay(board, roll2, -1, winPercentages);
-
+                    winPercentages.Clear();
                     if (move.Key != -1 && move.Value != -1) {
                         updateBoard(move);
                     }
                 }
                 else {
                     move = AI.getPlay(board, roll1, -1, winPercentages);
-
+                    winPercentages.Clear();
                     if (move.Key != -1 && move.Value != -1) {
                         updateBoard(move);
                     }

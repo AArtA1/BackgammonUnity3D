@@ -33,7 +33,6 @@ public class Dice : MonoBehaviour
     {
         if (numToRoll <= minDiceRollNum || numToRoll > maxDiceRollNum)
         {
-            //Should not be possible, the number rolled should be in bounds
             Debug.LogError("Invalid number given to dice roll");
             return;
         }
