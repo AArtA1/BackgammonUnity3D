@@ -2,11 +2,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-//Dice manager will control the value dice will roll and control when it should roll the dice or not
+
 /// <summary>
-/// Данный метод позволяет управлять генерацией игральных костей
+/// Данный класс позволяет управлять генерацией игральных костей
 /// Когда приходит время бросить кость, то мы вызываем функцию throwDice, генерируем два рандомных значения в диапазоне и 
-/// вызываем скрипт Dice.cs, который имитирует бросание кости, так как сила приложенная кости всегда будет давать нужный результат
+/// вызываем скрипт Dice.cs, который имитирует бросание кости, так как сила приложенная к кости всегда будет давать нужный результат
 /// </summary>
 public class DiceManager : MonoBehaviour
 {
@@ -22,7 +22,7 @@ public class DiceManager : MonoBehaviour
     [SerializeField] Dice firstDice = null;
     [SerializeField] Dice secondDice = null;
 
-    // Indicate seperation and resting rotation for dice
+    // Задает базовое положение для костей в статичном состоянии 
     [SerializeField] float dice2ZOffset = 2f;
     [SerializeField] float resetRotationY = 90f;
 
@@ -36,8 +36,8 @@ public class DiceManager : MonoBehaviour
 
     // После вызова данного метода идет генерация рандомных значений и вызов метода для отображения эффекта подбрасывания
     public int[] throwDice(bool allowDoubles) {
-        resetTransformations(positionOfDiceThrowing); //Resets velocity to ensure throw isn't impacted
-        firstDice.changeHighlightDice(false); //Dice should not be allowed to be moved or selcted during throw
+        resetTransformations(positionOfDiceThrowing); // Перезадаем скорость броска, чтобы гарантировать, корректность анимации броска игральной кости
+        firstDice.changeHighlightDice(false); // Кости не могут двигаться во время броска, поэтому отключаем их кликабельность сменой шейдера
         secondDice.changeHighlightDice(false);
 
         int diceValue1 = Random.Range(minDiceValue, maxDiceValue + 1);
@@ -50,15 +50,14 @@ public class DiceManager : MonoBehaviour
             }
         }
 
-        firstDice.rollDice(diceValue1); //Calls the dice to simulate the generated number roll
+        firstDice.rollDice(diceValue1); // Запускаем метод для имитации рандомной анимации бросания игральной кости
         secondDice.rollDice(diceValue2);
 
-        int[] rolledValues = { diceValue1, diceValue2 }; //Returns to the board the numbers rolled, in order to indicate which pieces are moveable
+        int[] rolledValues = { diceValue1, diceValue2 }; // Возвращаем данные значения экземпляру класс, чтобы дать понять, какие возможные ходы пользователь может сделать
         return rolledValues;
     }
 
-    //Resets the dice to ensure they have no weird position, velocity, or rotation
-    //Ensures the rolls will give us what we want
+    // Перезадаем кость в соответствии с identity, чтобы избежать каких-то странных позиций
     private void resetTransformations(Vector3 newPos) {
         this.transform.position = newPos;
         this.transform.rotation = Quaternion.identity;
@@ -68,7 +67,8 @@ public class DiceManager : MonoBehaviour
         secondDice.transform.rotation = Quaternion.identity;
     }
 
-    //Highlight the dice so that they are able to be selected
+   
+    // Запускаем шейдеры, для того чтобы дать понять игроку, что они кликабельны для разыгрывания 
     private void makeDiceClickable() {
         firstDice.changeHighlightDice(true);
         secondDice.changeHighlightDice(true);

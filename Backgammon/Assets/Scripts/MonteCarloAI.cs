@@ -2,9 +2,13 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-//The AI of the game, based off of the heuristic search algorithm Monte Carlo Tree Search
+
+/// <summary>
+/// Данный класс реализует метод Монте-Карло
+/// </summary>
 public class MonteCarloAI : MonoBehaviour {
-    //Equality comparer needed to distinguish differences between board states
+
+    // Данный класс нужен для сравнения разных состояний игрового стола(какие шашки на каких позициях стоят)
     public class CustomEqualityComparer : IEqualityComparer<int[]> {
         public bool Equals(int[] x, int[] y) {
             if (x.Length != y.Length) {
@@ -29,7 +33,7 @@ public class MonteCarloAI : MonoBehaviour {
         }
     }
 
-    //Board is a custom class for defining the state of a game, which is determined by the int array representing the board and which turn it is
+    // Данный класс нужен для определения состояния игры (какие шашки на каких позициях стоят)
     private class Board {
         private int[] board = new int[MAXPOINTES + 4];
         private bool whiteTurn = false;
@@ -77,19 +81,19 @@ public class MonteCarloAI : MonoBehaviour {
     private bool usedMove2 = false;
 
     private List<Board> states = new List<Board>();
-    private Dictionary<int[], int> wins = new Dictionary<int[], int>(new CustomEqualityComparer()); //Wins is a dictionary mapping board states to number of wins from that board state
-    private Dictionary<int[], int> plays = new Dictionary<int[], int>(new CustomEqualityComparer()); //Plays is dictionary mapping board states to number of plays from that board state
+    private Dictionary<int[], int> wins = new Dictionary<int[], int>(new CustomEqualityComparer()); // Хранит количество побед, разыгрывая все возможные случаи взяв в качестве стартовой точки состояние доски
+    private Dictionary<int[], int> plays = new Dictionary<int[], int>(new CustomEqualityComparer()); // Хранит количество законченных партий, разыгрывая все возможные случаи взяв в качестве стартовой точки состояние доски
 
-    public static float allocatedTime = 15f; //How much time a move is allowed to take up
-    [SerializeField] int maxMoves = 100; //Max moves allowed in one turn
-    [SerializeField] float explorationParam = 1.4f; //Used in equation to determine which child to visit
-    
-    //Get play takes in a board and the rolls for the AI, returns the best move given this information
+    public static float allocatedTime = 15f; // Время которое доступно, чтобы просмотреть n-нное количество возможных исходов
+    [SerializeField] int maxMoves = 100; // Максимальное количество ходов, которое можно сделать за один ход
+    [SerializeField] float explorationParam = 1.4f; // Используется в уравнении, чтобы определить какую ветвь выбрать дальше
+
+    // Берет доску и делает броски для ИИ, возвращает лучший ход с учетом этой информации.
     public KeyValuePair<int, int> getPlay(int[] origBoard, int roll1, int roll2, Dictionary<KeyValuePair<int, int>, float> winPercentages) {
         maxDepth = 0;
         int[] b = new int[origBoard.Length];
         
-        //Want deep copy of the board, do not want to overwrite board or will mess up main game. It is passed by reference
+        // Глубокое копирование доски
         for(int i = 0; i < origBoard.Length; i++) {
             b[i] = origBoard[i];
         }
@@ -99,7 +103,6 @@ public class MonteCarloAI : MonoBehaviour {
 
         List<KeyValuePair<int, int>> legalMoves = getLegalMoves(b, roll1, roll2, false);
 
-        //If no legal moves, return error code which will be dealt with by board manager, or if only 1 move return that move
         if(legalMoves.Count == 0) {
             return new KeyValuePair<int, int>(-1, -1);
         }
@@ -111,15 +114,14 @@ public class MonteCarloAI : MonoBehaviour {
 
         float currTimeRunning = 0f;
 
-        //Keep running simulations for the amount of time allowed
+        // Алгоритм работает в течение доступного времени allocatedTime, чтобы пользователь не ждал слишком долго
         while (currTimeRunning < allocatedTime) {
-            //Run simmulation
             runSimulation(roll1, roll2);
             currTimeRunning += Time.deltaTime;
             numGames += 1;
         }
 
-        Dictionary<KeyValuePair<int, int>, Board> moveStates = new Dictionary<KeyValuePair<int, int>, Board>(); //moveStates will contain move and board result
+        Dictionary<KeyValuePair<int, int>, Board> moveStates = new Dictionary<KeyValuePair<int, int>, Board>(); // Содержит перемещение и саму доску
         foreach (var move in legalMoves) {
             if (!moveStates.ContainsKey(move)) {
                 Board boardAfterMove = new Board(updateBoard(b, move, false), true);
@@ -130,7 +132,7 @@ public class MonteCarloAI : MonoBehaviour {
         float bestWinPercentage = 0f;
         KeyValuePair<int, int> bestMove = legalMoves[0];
 
-        //For each move, calculate best win percentage
+        // Для каждого хода считает лучший результат для победы
         foreach(var move in moveStates) {
             int numWins = 0;
             int playedGames = 0;
@@ -154,26 +156,23 @@ public class MonteCarloAI : MonoBehaviour {
         return bestMove;
     }
 
-    //Run simulation will go all the way until a winner is found and using random moves at times when necessary, given first rolls
+    // Моделирование запуска будет продолжаться до тех пор, пока не будет найден победитель, и использование случайных ходов время от времени, когда это необходимо, с учетом первых бросков.
     private void runSimulation(int r1, int r2) {
         HashSet<Board> visitedStates = new HashSet<Board>();
 
         Board currState = new Board(states[states.Count - 1].getBoard(), states[states.Count - 1].isWhiteTurn());
         
-        //Curr player update here
         bool isWhiteTurn = !currState.isWhiteTurn();
         usedMove1 = false;
         usedMove2 = false;
 
         bool expand = true;
 
-        //Keep going for a certain amount of moves, but will most likely reach winner
         for(int i = 1; i < maxMoves + 1; i++) {
             Board updatedState = new Board();
             int roll1;
             int roll2;
 
-            //Set for the first roll to be the given roll on the first run, or else use random rolls
             if (r1 > 0 && r2 > 0) {
                 roll1 = r1;
                 roll2 = r2;
@@ -199,13 +198,12 @@ public class MonteCarloAI : MonoBehaviour {
             if(usedMove2) {
                 roll2 = -1;
             }
-            //Pick random play from legal plays
+            // Выбираем случайный ход
             
-            //Calculate state after random play + Randomly select one of the moves + New state now (apply moves)
+            // Рассчитываем состояние после хода и выбираем случайно другой
 
             List<KeyValuePair<int, int>> legalMoves = getLegalMoves(currState.getBoard(), roll1, roll2, isWhiteTurn);
 
-            //If no legal moves, change sides
             if(legalMoves.Count == 0) {
                 isWhiteTurn = !isWhiteTurn;
                 usedMove1 = false;
@@ -230,9 +228,7 @@ public class MonteCarloAI : MonoBehaviour {
                 }
             }
 
-            //If we have done every possible move before, consider equation to see which move to pick, otherwise make random choice
             if(allStatesInPlays) {
-                //Use expression to see which node to explore
                 int sumOfMoveStates = 0;
                 foreach(var move in moveStates) {
                     sumOfMoveStates += plays[move.Value.getBoard()];
@@ -245,7 +241,6 @@ public class MonteCarloAI : MonoBehaviour {
                 bool usingMove1 = true;
                 Board bestState = new Board();
                 foreach(var move in moveStates) {
-                    //Currvalue is our upper bound expression to determine whether to explore a bad option or choose best option
                     float currValue = ((wins[move.Value.getBoard()] / plays[move.Value.getBoard()]) + explorationParam * Mathf.Sqrt(logTotal / plays[move.Value.getBoard()]));
 
                     if(currValue > maxValue) {
@@ -261,7 +256,7 @@ public class MonteCarloAI : MonoBehaviour {
                     }
                 }
 
-                //Check which roll we use, roll1 or roll2
+                // Смотрим какой ход мы выбираем
                 if(usingMove1) {
                     usedMove1 = true;
                 }
@@ -272,7 +267,7 @@ public class MonteCarloAI : MonoBehaviour {
                 updatedState.setTurn(isWhiteTurn);
             }
             else {
-                //Make random choice
+                // Делаем случайный ход 
                 updatedState.setBoard(applyRandomMove(currState.getBoard(), roll1, roll2, isWhiteTurn));
                 updatedState.setTurn(isWhiteTurn);
             }
@@ -285,7 +280,7 @@ public class MonteCarloAI : MonoBehaviour {
             }
 
 
-            //Append new state to states
+            // Добавляем новое состояние 
             currState = updatedState;
 
             if(expand && !plays.ContainsKey(currState.getBoard())) {
@@ -302,12 +297,10 @@ public class MonteCarloAI : MonoBehaviour {
 
 
 
-            //If win, break 
             if (won(currState.getBoard(), isWhiteTurn)) {
                 break;
             }
 
-            //Switch sides if both moves used
             if(usedMove1 && usedMove2) {
                 isWhiteTurn = !isWhiteTurn;
                 usedMove1 = false;
@@ -315,7 +308,7 @@ public class MonteCarloAI : MonoBehaviour {
             }
         }
 
-        //Update the list of plays and wins model, only update if we got to the state by expanding, not by random simulation
+        // Обновляем список игр и побед
         foreach(Board state in visitedStates) {
             if(!plays.ContainsKey(state.getBoard())) {
                 continue;
@@ -328,7 +321,7 @@ public class MonteCarloAI : MonoBehaviour {
         }
     }
 
-    //Return if someone has won the game
+    // Возвращаем, если кто-то победил
     private bool won(int[] b, bool checkWhite) {
 
         if(checkWhite) { 
@@ -347,22 +340,20 @@ public class MonteCarloAI : MonoBehaviour {
         } 
     }
 
-    //Return an updated board after a random move is applied
+    // Возвращаем обновленную доску после перемещения
     private int[] applyRandomMove(int[] b, int roll1, int roll2, bool isWhiteTurn) {
         if (b.Length != (MAXPOINTES + 4)) {
             Debug.Log("Incorrect sized array passed in.");
         }
 
-        //Check which checker we are -- Assume black
 
-        //If regular or barring off
         
         bool barringOff = checkBarringOff(b, isWhiteTurn);
 
         return getRandomMove(b, roll1, roll2, barringOff, isWhiteTurn);
     }
 
-    //Get all possible moves for a given board state
+    // Возвращаем все возможные ходы на столе 
     private List<KeyValuePair<int, int>> getLegalMoves(int[] b, int roll1, int roll2, bool isWhite) {
         List<KeyValuePair<int, int>> legalMoves1 = new List<KeyValuePair<int, int>>();
         List<KeyValuePair<int, int>> legalMoves2 = new List<KeyValuePair<int, int>>();
@@ -408,7 +399,7 @@ public class MonteCarloAI : MonoBehaviour {
         return legalMoves;
     }
 
-    //Check if someone is barring off given a board state
+    // Проверяем, не блокирует ли кто-либо данное состояние доски
     private bool checkBarringOff(int[] b, bool checkWhite) {
         if(checkWhite) {
             int numWhiteInHome = 0;
@@ -446,7 +437,7 @@ public class MonteCarloAI : MonoBehaviour {
         } 
     }
 
-    //Get all possible moves, pick a random move, and return the board after that move is done
+    // Получаем все ходы и выбираем случайный
     private int[] getRandomMove(int[] b, int roll1, int roll2, bool isBarringOff, bool checkWhite) {
         KeyValuePair<int, int> pickedMove = new KeyValuePair<int, int>();
 
@@ -509,36 +500,34 @@ public class MonteCarloAI : MonoBehaviour {
         int totalPossibleMoves;
 
         if (numRoll1Moves == 0 && numRoll2Moves == 0) {
-            //No moves possible
+            // Нет возможных ходов
             usedMove1 = true;
             usedMove2 = true;
             return b;
         }
         else if(numRoll2Moves == 0) {
-            //Only consider move1
+            // Только первый ход
             randomMove = Random.Range(0, numRoll1Moves);
             pickedMove = movesRoll1[randomMove];
             usedMove1 = true;
         }
         else if(numRoll1Moves == 0) {
-            //Only consider move2
+            // Только второй ход
             usedMove2 = true;
             randomMove = Random.Range(0, numRoll2Moves);
             pickedMove = movesRoll2[randomMove];
         }
         else {
-            //Consider both rolls
+            // Рассматриваем оба хода
             totalPossibleMoves = numRoll1Moves + numRoll2Moves;
 
             randomMove = Random.Range(0, totalPossibleMoves);
 
             if(randomMove < numRoll1Moves) {
-                //Random move is from roll1
                 usedMove1 = true;
                 pickedMove = movesRoll1[randomMove];
             }
             else {
-                //Random move is from roll2
                 usedMove2 = true;
                 pickedMove = movesRoll2[randomMove - numRoll1Moves];
             }
@@ -547,7 +536,7 @@ public class MonteCarloAI : MonoBehaviour {
         return updateBoard(b, pickedMove, checkWhite);
     }
 
-    //Apply a move to a given board
+    // Применяем ход к доске
     private int[] updateBoard(int[] origBoard, KeyValuePair<int, int> movePair, bool whiteTurn) {
         int[] b = new int[origBoard.Length];
 
@@ -567,20 +556,16 @@ public class MonteCarloAI : MonoBehaviour {
         return b;
     }
 
-    //Get list of all possible moves for a given board state and roll
+    // Получаем список из всех возможных ходов для заданного состояния доски 
     private List<KeyValuePair<int, int>> getRegularMoves(int[] b, int roll, int nonUsedRoll, bool getWhiteMoves) {
         if(roll < 0) {
             return null;
         }
         List<KeyValuePair<int, int>> moves = new List<KeyValuePair<int, int>>();
         if(getWhiteMoves) {
-            //Check if checker on bar
             if (b[24] > 0) {
-                //Checker(s) on bar, must have rules here
                 if (b[MAXPOINTES - roll] > -2) {
-                    //Ensure that larger number isnt only possible move
                     if (b[24] == 1 && nonUsedRoll > roll && b[MAXPOINTES - nonUsedRoll] > -2 && !anyValidMoves(b, roll, nonUsedRoll, 24, true, true)) {
-                        //Cant do smaller move then
                     }
                     else {
                         moves.Add(new KeyValuePair<int, int>(24, MAXPOINTES - roll));
@@ -588,13 +573,11 @@ public class MonteCarloAI : MonoBehaviour {
                 }
             }
             else {
-                //Normal play
                 bool checkEdgeCase = true;
                 for (int i = MAXPOINTES; i >= roll; i--) {
                     if (b[i] > 0 && b[i - roll] > -2) {
                         if (nonUsedRoll > roll && (i - nonUsedRoll) >= 0 && b[i - nonUsedRoll] > -2 && checkEdgeCase) {
                             if (!anyValidMoves(b, roll, nonUsedRoll, i, false, true)) {
-                                //Cant do smaller move then
                                 continue;
                             }
                             else {
@@ -610,13 +593,9 @@ public class MonteCarloAI : MonoBehaviour {
             }
         }
         else {
-            //Check if checker on bar
             if (b[25] < 0) {
-                //Checker(s) on bar, must have rules here
                 if (b[roll - 1] < 2) {
-                    //Ensure that larger number isnt only possible move
                     if (b[25] == -1 && nonUsedRoll > roll && b[nonUsedRoll - 1] < 2 && !anyValidMoves(b, roll, nonUsedRoll, 25, true, false)) {
-                        //Cant do smaller move then
                     }
                     else {
                         moves.Add(new KeyValuePair<int, int>(25, roll - 1));
@@ -624,13 +603,11 @@ public class MonteCarloAI : MonoBehaviour {
                 }
             }
             else {
-                //Normal play
                 bool checkEdgeCase = true;
                 for (int i = (MAXPOINTES - roll - 1); i >= 0; i--) {
                     if (b[i] < 0 && b[i + roll] < 2) {
                         if (nonUsedRoll > roll && (i + nonUsedRoll) < MAXPOINTES && b[i + nonUsedRoll] < 2 && checkEdgeCase) {
                             if (!anyValidMoves(b, roll, nonUsedRoll, i, false, false)) {
-                                //Cant do smaller move then
                                 continue;
                             }
                             else {
@@ -649,15 +626,9 @@ public class MonteCarloAI : MonoBehaviour {
         return moves;
     }
 
-    //Checks edge case for certain conditions
+    // Проверяем крайний случай для определенных условий
     private List<KeyValuePair<int, int>> refineRegularMoves(int[] b, List<KeyValuePair<int, int>> legalMoves, int unusedRoll, bool refineWhite) {
-        /*i i o i i o | i i i i x i
 
-          i x i i i i | o i i i i i
-          roll 3,5 case where double move required
-          
-          Checking for above case
-        */
         if(unusedRoll < 0) {
             return legalMoves;
         }
@@ -668,7 +639,6 @@ public class MonteCarloAI : MonoBehaviour {
             foreach (var move in legalMoves) {
                 int pointeToConsider = move.Value - unusedRoll;
                 if (pointeToConsider >= 0 && b[move.Value - unusedRoll] > -2) {
-                    //We must only do this kind of move, can now use both rolls
                     refinedMoves.Add(move);
                 }
             }
@@ -677,7 +647,6 @@ public class MonteCarloAI : MonoBehaviour {
             foreach (var move in legalMoves) {
                 int pointeToConsider = move.Value + unusedRoll;
                 if (pointeToConsider < MAXPOINTES && b[move.Value + unusedRoll] < 2) {
-                    //We must only do this kind of move, can now use both rolls
                     refinedMoves.Add(move);
                 }
             }
@@ -690,7 +659,7 @@ public class MonteCarloAI : MonoBehaviour {
         return legalMoves;
     }
 
-    //Returns if there are any possible moves given a board state and rolls
+    // Возвращаем, если есть какие-либо возможные ходы с учетом состояния доски и бросков
     private bool anyValidMoves(int[] origBoard, int smallerRoll, int largerRoll, int origPos, bool barCase, bool checkWhite) {
         int[] b = new int[origBoard.Length];
         for(int i = 0; i < origBoard.Length; i++) {
@@ -743,7 +712,7 @@ public class MonteCarloAI : MonoBehaviour {
         }
     }
 
-    //Get possible moves when in barring off state given a board state
+    // Получаем возможные ходы в состоянии запрета с учетом состояния доски
     private List<KeyValuePair<int, int>> getBarringOffMoves(int[] b, int roll, int nonUsedRoll, bool getWhite) {
         List<KeyValuePair<int, int>> moves = new List<KeyValuePair<int, int>>();
 
@@ -753,20 +722,16 @@ public class MonteCarloAI : MonoBehaviour {
 
         if(getWhite) {
             if (b[roll - 1] > 0) {
-                //Checker needs to be moved
                 moves.Add(new KeyValuePair<int, int>(roll - 1, 26));
             }
             else {
                 bool foundValidChecker = false;
-                //Check for higher num checker
                 for (int i = 5; i > (roll - 1); i--) {
                     if (b[i] > 0 && b[i - roll] > -2) {
 
                         if (nonUsedRoll > 0 && (i - nonUsedRoll) == -1) {
-                            //Do not add move, has to use other roll
                         }
                         else {
-                            //Add to moves
                             moves.Add(new KeyValuePair<int, int>(i, i - roll));
                             foundValidChecker = true;
                         }
@@ -778,10 +743,8 @@ public class MonteCarloAI : MonoBehaviour {
                         if (b[i] > 0) {
 
                             if (nonUsedRoll > 0 && (i - nonUsedRoll) == -1) {
-                                //Do not add move, has to use other roll
                             }
                             else {
-                                //Return only this move
                                 moves.Add(new KeyValuePair<int, int>(i, 26));
                                 break;
                             }
@@ -792,20 +755,16 @@ public class MonteCarloAI : MonoBehaviour {
         }
         else {
             if (b[MAXPOINTES - roll] < 0) {
-                //Checker needs to be moved
                 moves.Add(new KeyValuePair<int, int>(MAXPOINTES - roll, 27));
             }
             else {
                 bool foundValidChecker = false;
-                //Check for higher num checker
                 for (int i = 18; i < (MAXPOINTES - roll); i++) {
                     if (b[i] < 0 && b[i + roll] < 2) {
 
                         if (nonUsedRoll > 0 && (i + nonUsedRoll) == MAXPOINTES) {
-                            //Do not add move, has to use other roll
                         }
                         else {
-                            //Add to moves
                             moves.Add(new KeyValuePair<int, int>(i, i + roll));
                             foundValidChecker = true;
                         }
@@ -817,10 +776,8 @@ public class MonteCarloAI : MonoBehaviour {
                         if (b[i] < 0) {
 
                             if (nonUsedRoll > 0 && (i + nonUsedRoll) == MAXPOINTES) {
-                                //Do not add move, has to use other roll
                             }
                             else {
-                                //Return only this move
                                 moves.Add(new KeyValuePair<int, int>(i, 27));
                                 break;
                             }

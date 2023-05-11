@@ -1,24 +1,26 @@
 ﻿using UnityEngine;
 
-//Dedicated to the dice object, defines its behavior
+/// <summary>
+/// Данный класс определяет поведение игральной кости
+/// </summary>
 public class Dice : MonoBehaviour
 {
-    //Used to indicate a die is clickable by applying a highlight shader effect
+    // Используем два разных шейдера, чтобы дать понять пользователю, когда элемент становится кликабельным
     private const string HIGHLIGHTSHADERNAME = "Shader Graphs/DiceHighlight";
     private const string DEFAULTSHADERNAME = "Lightweight Render Pipeline/Lit";
     private bool clickable = false;
 
-    //The game only supports rolls 1-6
+    // Значения, которые можно получить с помощью игральной кости (1-6) 
     private int minDiceRollNum = 0;
     private int maxDiceRollNum = 6;
 
-    //Force amount is the amount of force to use when simulating a dice roll
+    // Сила, с которой бросаем игральную кость
     [SerializeField] Vector3 forceAmount = new Vector3(-300f, 0f, 0f);
     [SerializeField] Rigidbody rb = null;
     [SerializeField] Renderer renderer = null;
 
-    //After testing, these values were determined to produce the desired roll. Ex. if roll a 1 from RNG, then roll1Torque will be used to immitate a roll of 1
-    //Easy way to still allow true randomness for the dice and to have a cool little visual of throwing dice
+    // После тестирования на протяжении некоторого времени, стало понятно, какую силу нужно приложить 
+    // Это довольно простой способ сохранить эффект рандомности подбрасывания игральной кости для более глубокого погружения в игровой процесс
     private Vector3 roll1Torque = new Vector3(700f, 2000f, 4000f);
     private Vector3 roll2Torque = new Vector3(-30f, 360f, 360f);
     private Vector3 roll3Torque = new Vector3(-30f, -45f, -30f);
@@ -26,7 +28,7 @@ public class Dice : MonoBehaviour
     private Vector3 roll5Torque = new Vector3(1900f, 1100f, -2000f);
     private Vector3 roll6Torque = new Vector3(30f, -10f, 60f);
 
-    //When given a number rolled, ex. 1, it will cause the dice to roll that value
+    // Если метод получает значение 1, то применяет нужную силу к кости, чтобы она упала на данное значение
     public void rollDice(int numToRoll)
     {
         if (numToRoll <= minDiceRollNum || numToRoll > maxDiceRollNum)
@@ -71,7 +73,7 @@ public class Dice : MonoBehaviour
         }
     }
 
-    //This applys the shader to the dice and allows them to be clickable or nonclickable
+    // Применяем нужный шейдер к игральной кости в зависимости от их кликабельности
     public void changeHighlightDice(bool toHighlight)
     {
         if (toHighlight)
@@ -85,6 +87,7 @@ public class Dice : MonoBehaviour
             clickable = false;
         }
     }
+
 
     public bool isClickable()
     {

@@ -2,16 +2,18 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-//This class focuses on managing the checkers on the bar and and deals with adding/removing/allowing checkers to be moveable
+/// <summary>
+/// Этот класс фокусируется на управлении шашками на панели и имеет дело с добавлением/удалением/разрешением перемещения шашек
+/// </summary>
 public class BarMananger : MonoBehaviour
 {
     private const int MAXCHECKERS = 15;
 
-    //Stores the positions of where to add checkers
+    // Сохраняет позиции, куда добавлять шашки
     [SerializeField] Vector3 whiteCheckerPos = Vector3.zero;
     [SerializeField] Vector3 blackCheckerPos = Vector3.zero;
 
-    //Creates an offset between each checker added to the bar
+    // Создает смещение между каждой добавленной на панель шашкой
     [SerializeField] float checkerYOffset = 0.5f;
 
     private Checker[] whiteCheckers = new Checker[MAXCHECKERS];
@@ -20,11 +22,11 @@ public class BarMananger : MonoBehaviour
     private bool whiteOnBar = false;
     private bool blackOnBar = false;
 
-    //Acts like a stack, where it will point to the highest checker on the checker bar stack, so that one will be moved first
+    // Действует как стек, где он указывает на самую высокую шашку в стеке шашечной панели, так что одна из них будет перемещена первой.
     private int currWhitePos = 0;
     private int currBlackPos = 0;
 
-    //Add checker to the bar given a checker. Must be added to the array for future reference and calculates the position to move the checker to
+    // Добавляет шашку в бар 
     public void addCheckerOnBar(Checker checker) {
         if(checker.isCheckerWhite()) {
             whiteCheckers[currWhitePos] = checker;
@@ -46,7 +48,7 @@ public class BarMananger : MonoBehaviour
         }
     }
 
-    //Removes and returns the top most checker from the bar, given which color checker to remove
+    // Удаляет и возвращает самую верхнюю шашку из бара, учитывая, какую шашку цвета удалить
     public Checker removeCheckerOnBar(bool isWhiteChecker) {
         if(isWhiteChecker) {
             if(whiteOnBar) {
@@ -61,7 +63,6 @@ public class BarMananger : MonoBehaviour
                 return removedChecker;
             }
             else {
-                //This should not occur, or else it was not properly checked that there exists a checker on the bar. Print a debug and return null
                 Debug.LogError("Cannot remove checker from empty bar");
                 return null;
             }
@@ -79,14 +80,13 @@ public class BarMananger : MonoBehaviour
                 return removedChecker;
             }
             else {
-                //This should not occur, or else it was not properly checked that there exists a checker on the bar. Print a debug and return null
                 Debug.LogError("Cannot remove checker from empty bar");
                 return null;
             }
         }
     }
 
-    //Applys a shader to the top most checker to indicate it can be chosen
+    // Применяет шейдер, чтобы указать, что его можно выбрать.
     public void highlightChecker(bool whiteToHighlight) {
         if(whiteToHighlight) {
             whiteCheckers[currWhitePos - 1].changeHighlightChecker(true);
